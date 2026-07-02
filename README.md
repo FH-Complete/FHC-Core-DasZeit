@@ -1,2 +1,2 @@
 # FHC-Core-DasZeit
-Extension to Manage Communicate between FH-Complete and dasZeit.io
+Extension to manage communication between FH-Complete and dasZeit.io

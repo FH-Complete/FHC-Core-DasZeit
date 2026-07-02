@@ -1,0 +1,8 @@
+{
+	"name": "FHC-Core-DasZeit",
+	"description": "DasZeit Extension",
+	"version": "1",
+	"license": "GPL",
+	"url": "https://github.com/FH-Complete/FHC-Core-DasZeit",
+	"core_version": "3.4"
+}
