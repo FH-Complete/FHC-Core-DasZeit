@@ -3,9 +3,9 @@
 require_once APPPATH.'models/extensions/FHC-Core-DasZeit/ZeitClientModel.php';
 
 /**
- * Implements the Zeit webservice calls for entities (employees)
+ * Implements the Zeit webservice calls for zeiterfassung)
  */
-class EntitiesModel extends ZeitClientModel
+class Zeiterfassung_model extends ZeitClientModel
 {
 	/**
 	 * Object initialization
@@ -14,20 +14,24 @@ class EntitiesModel extends ZeitClientModel
 	{
 		parent::__construct();
 
-		$this->_apiSetName = 'entities';
+		$this->_apiSetName = 'reports/zeiterfassung';
 	}
 
 	// --------------------------------------------------------------------------------------------
 	// Public methods
 
 	/**
-	 * Gets data of all entities (employees)
+	 * Gets data
 	 */
-	public function getEntities()
+	public function getZeiterfassung($from, $to)
 	{
+		$params = array();
+		if (isset($from)) $params['from'] = $from;
+		if (isset($to)) $params['to'] = $to;
 		return $this->_call(
 			$this->_apiSetName,
-			ZeitClientLib::HTTP_GET_METHOD
+			ZeitClientLib::HTTP_GET_METHOD,
+			$params
 		);
 	}
 }

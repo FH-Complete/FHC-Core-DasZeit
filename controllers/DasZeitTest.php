@@ -21,7 +21,7 @@ class DasZeitTest extends JOB_Controller
 	public function runDasZeitExample()
 	{
 		// Loads model
-		$this->load->model('extensions/FHC-Core-DasZeit/EntitiesModel', 'EntitiesModel');
+		$this->load->model('extensions/FHC-Core-DasZeit/Entities_model', 'EntitiesModel');
 
 		// test calls - get employees
 		$entitiesRes = $this->EntitiesModel->getEntities();

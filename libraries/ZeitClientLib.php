@@ -151,6 +151,8 @@ class ZeitClientLib
 
 		if ($this->isError()) return null; // If an error was raised then return a null value
 
+		var_dump($this->_generateURI());
+
 		return $this->_callRemoteWS($this->_generateURI()); // perform a remote ws call with the given uri
 	}
 
@@ -302,12 +304,17 @@ class ZeitClientLib
 		$queryString = '';
 
 		// Create the query string
-		foreach ($this->_uriParametersArray as $value)
+		if (isset($this->_uriParametersArray) && !isEmptyArray($this->_uriParametersArray))
 		{
-				$queryString .= '/'.urlencode($value);
+			$params = array();
+			foreach($this->_uriParametersArray as $key => $val)
+			{
+				// replace single quotes by spaces, as server cannot handle single quotes for GET requests
+				//if ($this->_httpMethod == self::HTTP_GET_METHOD) $val = str_replace("'", " ", $val);
+				$params[] = $key.'='.urlencode($val);
+			}
+			$uri .= '?'.implode('&', $params);
 		}
-
-		$uri .= $queryString;
 
 		return $uri;
 	}
