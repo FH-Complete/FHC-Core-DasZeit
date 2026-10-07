@@ -1,6 +1,8 @@
 CREATE TABLE IF NOT EXISTS extension.tbl_daszeit_entities (
 	mitarbeiter_uid character varying(32) NOT NULL,
-	daszeit_entity_id integer NOT NULL
+	daszeit_entity_id integer NOT NULL,
+	insertamum TIMESTAMP DEFAULT NOW(),
+	insertvon character varying(32)
 );
 
 COMMENT ON TABLE extension.tbl_daszeit_entities IS 'Employee synchronization table with DasZeit system';

@@ -21,3 +21,10 @@ END $$;
 
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE extension.tbl_daszeit_absence_reasons TO vilesci;
 GRANT SELECT ON TABLE extension.tbl_daszeit_absence_reasons TO web;
+
+INSERT INTO
+	extension.tbl_daszeit_absence_reasons (zeitsperretyp_kurzbz, daszeit_absence_reason)
+VALUES
+	('Krank', 'Krankenstand'), ('Schulung', 'Aus- und Weiterbildung'), ('Arzt', 'Arztbesuch')
+ON
+	CONFLICT (zeitsperretyp_kurzbz, daszeit_absence_reason) DO NOTHING;
