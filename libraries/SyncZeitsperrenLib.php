@@ -48,33 +48,48 @@ class SyncZeitsperrenLib
 		$this->_ci->load->model('extensions/FHC-Core-DasZeit/Zeiterfassung_model', 'DasZeitZeiterfassungModel');
 		$this->_ci->load->model('extensions/FHC-Core-DasZeit/synctables/DasZeitEntitiesSync_model', 'DasZeitEntitiesSyncModel');
 		$this->_ci->load->model('extensions/FHC-Core-DasZeit/synctables/DasZeitAbsenceReasonSync_model', 'DasZeitAbsenceReasonSyncModel');
+		$this->_ci->load->model('extensions/FHC-Core-DasZeit/synctables/DasZeitZeitsperrenSync_model', 'DasZeitZeitsperrenSyncModel');
 	}
 
 	// --------------------------------------------------------------------------------------------
 	// Public methods
 
 	/**
-	 * Sync Zeitsperren 
+	 * Synchronize Zeitsperren between dasZeit and fhcomplete
+	 * @param $von date, from which Zeitsperren should be synced
+	 * @param $bis date, to which Zeitsperren should be synced
 	 */
 	public function syncZeitsperren($von, $bis)
 	{
-		$returnArr = ['errors' => [], 'noSaved' => 0];
+		if (!is_valid_date($von) || (isset($bis) && !is_valid_date($bis))) return error("Invalid date");
 
-		$result = $this->_ci->DasZeitZeiterfassungModel->getZeiterfassung($von, $bis);
+		$returnArr = ['errors' => [], 'noSaved' => 0, 'noDeleted' => 0];
 
-		if (isError($result)) return $result;
+		$dasZeitSperren = $this->_ci->DasZeitZeiterfassungModel->getZeiterfassung($von, $bis);
 
-		if (!hasData($result)) return success();
+		if (isError($dasZeitSperren)) return $dasZeitSperren;
+		if (!hasData($dasZeitSperren)) return success();
 
-		$sperren = getData($result);
+		// Get already synced Zeitsperren from fhc
+		$syncedFhcSperren = [];
+		$this->_ci->DasZeitZeitsperrenSyncModel->addSelect('zeitsperre_id, vondatum, bisdatum, zeitsperretyp_kurzbz, mitarbeiter_uid');
+		$this->_ci->DasZeitZeitsperrenSyncModel->addJoin('campus.tbl_zeitsperre', 'zeitsperre_id');
+		$this->_ci->DasZeitZeitsperrenSyncModel->db->where('vondatum >=', $von);
+		if (isset($bis)) $this->_ci->DasZeitZeitsperrenSyncModel->db->where('bisdatum <=', $bis);
+		$syncedFhcSperrenRes = $this->_ci->DasZeitZeitsperrenSyncModel->load();
 
-		foreach ($sperren as $sperre)
+		if (isError($syncedFhcSperrenRes)) return $syncedFhcSperrenRes;
+		if (hasData($syncedFhcSperrenRes)) $syncedFhcSperren = getData($syncedFhcSperrenRes);
+
+		$dasZeitSperren = getData($dasZeitSperren);
+
+		foreach ($dasZeitSperren as $dasZeitSperre)
 		{
 			// check validity of Sperre
-			if (!$this->_checkSperre($sperre)) continue;
+			if (!$this->_checkSperre($dasZeitSperre)) continue;
 
 			// map Sperre to fhc format
-			$fhcSperre = $this->_mapSperre($sperre);
+			$fhcSperre = $this->_mapSperre($dasZeitSperre);
 
 			if (isError($fhcSperre))
 			{
@@ -84,7 +99,10 @@ class SyncZeitsperrenLib
 
 			if (!hasData($fhcSperre)) continue;
 
-			$result = $this->_saveSperre(getData($fhcSperre));
+			$fhcSperre = getData($fhcSperre);
+
+			// finally, save Sperre in db
+			$result = $this->_saveSperre($fhcSperre);
 
 			if (isError($result))
 			{
@@ -94,14 +112,37 @@ class SyncZeitsperrenLib
 			{
 				$returnArr['noSaved']++;
 			}
+
+			// filter already synced sperren - if they are not in dasZeit anymore, they should be deleted!
+			$syncedFhcSperren = array_filter($syncedFhcSperren, function($obj) use ($fhcSperre){
+				return $obj->zeitsperretyp_kurzbz != $fhcSperre['zeitsperretyp_kurzbz']
+					|| $obj->mitarbeiter_uid != $fhcSperre['mitarbeiter_uid']
+					|| DateTime::createFromFormat('Y-m-d', $obj->vondatum) > DateTime::createFromFormat('Y-m-d', $fhcSperre['bisdatum'])
+					|| DateTime::createFromFormat('Y-m-d', $obj->bisdatum) < DateTime::createFromFormat('Y-m-d', $fhcSperre['vondatum']);
+			});
+		}
+
+		// delete Sperren, which are already deleted in dasZeit
+		foreach ($syncedFhcSperren as $syncedSperre)
+		{
+			$result = $this->_ci->DasZeitZeitsperrenSyncModel->deleteZeitSperre($syncedSperre->zeitsperre_id);
+
+			if (isError($result))
+			{
+				$returnArr['errors'][] = getError($result);
+			}
+			else
+			{
+				$returnArr['noDeleted']++;
+			}
 		}
 
 		return success($returnArr);
 	}
 
 	/**
-	 * 
-	 * @param
+	 * Map Zeitsperre from dasZeit to fhcomplete Zeitsperre.
+	 * @param $dasZeitSperre
 	 * @return object success or error
 	 */
 	private function _mapSperre($dasZeitSperre)
@@ -139,12 +180,19 @@ class SyncZeitsperrenLib
 
 		$fhcZeitsperre['zeitsperretyp_kurzbz'] = getData($result)[0]->zeitsperretyp_kurzbz;
 
+		// change date format
+		$d = DateTime::createFromFormat(self::DAS_ZEIT_DATE_FORMAT, $fhcZeitsperre['vondatum']);
+		$fhcZeitsperre['vondatum'] = $d->format('Y-m-d');
+
+		$d = DateTime::createFromFormat(self::DAS_ZEIT_DATE_FORMAT, $fhcZeitsperre['bisdatum']);
+		$fhcZeitsperre['bisdatum'] = $d->format('Y-m-d');
+
 		return success($fhcZeitsperre);
 	}
 
 	/**
-	 * 
-	 * @param
+	 * Save the Sperre in db
+	 * @param $fhcZeitsperre
 	 * @return object success or error
 	 */
 	private function _saveSperre($fhcZeitsperre)
@@ -174,13 +222,25 @@ class SyncZeitsperrenLib
 
 			// Zeitsperre exists -> update
 			$zeitsperre_id = $zeitsperre[0]->zeitsperre_id;
+			$fhcZeitsperre['updatevon'] = self::INSERT_VON;
+			$fhcZeitsperre['updateamum'] = "NOW()";
 			$saveResult = $this->_ci->ZeitsperreModel->update(['zeitsperre_id' => $zeitsperre_id], $fhcZeitsperre);
 		}
 		else
 		{
 			// Zeitsperre does not exist yet -> insert
 			$fhcZeitsperre['insertvon'] = self::INSERT_VON;
+			$fhcZeitsperre['insertamum'] = "NOW()";
 			$saveResult = $this->_ci->ZeitsperreModel->insert($fhcZeitsperre);
+
+			// save in sync table if successful
+			if (isSuccess($saveResult) && hasData($saveResult))
+			{
+				$syncTblRes = $this->_ci->DasZeitZeitsperrenSyncModel->insert(
+					['zeitsperre_id' => getData($saveResult), 'insertvon' => self::INSERT_VON]
+				);
+				if (isError($syncTblRes)) return $syncTblRes;
+			}
 		}
 
 		return $saveResult;

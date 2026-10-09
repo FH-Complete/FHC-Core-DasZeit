@@ -151,8 +151,6 @@ class ZeitClientLib
 
 		if ($this->isError()) return null; // If an error was raised then return a null value
 
-		var_dump($this->_generateURI());
-
 		return $this->_callRemoteWS($this->_generateURI()); // perform a remote ws call with the given uri
 	}
 

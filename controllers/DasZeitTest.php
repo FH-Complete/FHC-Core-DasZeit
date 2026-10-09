@@ -26,7 +26,5 @@ class DasZeitTest extends JOB_Controller
 		// test calls - get employees
 		$entitiesRes = $this->EntitiesModel->getEntities();
 		$entitiesRess = $this->EntitiesModel->getEntities();
-
-		//var_dump($entitiesRes);
 	}
 }

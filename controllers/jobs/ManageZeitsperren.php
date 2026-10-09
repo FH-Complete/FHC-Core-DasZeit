@@ -24,7 +24,7 @@ class ManageZeitsperren extends JOB_Controller
 	/**
 	 * Save Zeitsperren data into the sync table
 	 */
-	public function syncZeitsperren($von = null, $bis = null)
+	public function syncZeitsperren($von, $bis = null)
 	{
 		$this->logInfo('Start Zeitsperren synchronization with dasZeit');
 
