@@ -35,7 +35,7 @@ class MitarbeiterSync extends FHCAPI_Controller
 		// set uid of logged in user
 		$this->_setAuthUID();
 
-		$this->_fields =  [
+		$this->_fields = [
 			'mitarbeiter_uid' => ['dasZeitField' => 'id', 'displayName' => $this->p->t('dasZeit', 'id')],
 			'personalnummer' => ['dasZeitField' => 'personnelNumber', 'displayName' => $this->p->t('dasZeit', 'personalnummer')],
 			'vorname' => ['dasZeitField' => 'firstName', 'displayName' => $this->p->t('dasZeit', 'vorname')],

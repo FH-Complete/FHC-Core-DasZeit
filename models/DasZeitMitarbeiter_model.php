@@ -23,6 +23,7 @@ class DasZeitMitarbeiter_model extends DB_Model
 	{
 		$qry = "SELECT
 					mitarbeiter_uid, personalnummer, vorname, nachname,
+					COALESCE(ben.alias, ben.uid) || '".'@'.DOMAIN."' AS email,
 					(
 						SELECT
 							STRING_AGG(kontakt, ', ' ORDER BY insertamum DESC)
@@ -32,7 +33,7 @@ class DasZeitMitarbeiter_model extends DB_Model
 							kontakttyp = 'email'
 							AND zustellung
 							AND person_id = pers.person_id
-					) AS email,
+					) AS email_privat,
 					akt_funk.oe_kurzbz
 				FROM
 					public.tbl_mitarbeiter ma
