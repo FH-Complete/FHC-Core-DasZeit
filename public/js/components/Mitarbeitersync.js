@@ -88,8 +88,6 @@ export const Mitarbeitersync = {
 			this.getDasZeitMitarbeiterByUid();
 		},
 		getMitarbeiterByUid() {
-			console.log(this.modelValue);
-
 			let mitarbeiter_uid = this.modelValue != null && this.modelValue.personUID ? this.modelValue.personUID : this.searchMitarbeiterUid;
 
 			if (mitarbeiter_uid != null)
@@ -99,7 +97,6 @@ export const Mitarbeitersync = {
 				.call(ApiMitarbeiterSync.getMitarbeiterByUid(mitarbeiter_uid))
 				.then((response) => {
 					this.mitarbeiter = response.data;
-					console.log(this.mitarbeiter);
 
 					// hide loading
 					this.$refs.loader.hide();
@@ -116,16 +113,16 @@ export const Mitarbeitersync = {
 				this.$api
 				.call(ApiMitarbeiterSync.getDasZeitMitarbeiterByUid(mitarbeiter_uid))
 				.then((response) => {
-					console.log(typeof response.data);
 					if (typeof response.data === 'string' || response.data instanceof String)
 					{
 						this.dasZeitMessage = response.data
+						this.dasZeitMitarbeiter = {};
 					}
 					else if (typeof response.data === 'object')
 					{
 						this.dasZeitMitarbeiter = response.data;
+						this.dasZeitMessage = null;
 					}
-					console.log(this.dasZeitMitarbeiter);
 
 					// hide loading
 					this.$refs.loader.hide();
@@ -135,31 +132,7 @@ export const Mitarbeitersync = {
 		},
 		searchfunction(params, config) {
 			return this.$api.call(ApiSearchbar.search(params), config);
-		},
-		//~ onSearch(e) {
-			//~ const searchsettings = { ...this.$refs.searchbar.searchsettings };
-
-			//~ if (searchsettings.searchstr.length >= 2) {
-				//~ //this.deleteCustomFilter();
-				
-				//~ if (!searchsettings.types.length || searchsettings.types.length == this.$refs.searchbar.types.length) {
-					//~ this.$router.push({
-						//~ name: 'search',
-						//~ params: {
-							//~ query: searchsettings.searchstr
-						//~ }
-					//~ });
-				//~ } else {
-					//~ this.$router.push({
-						//~ name: 'searchtypes',
-						//~ params: {
-							//~ query: searchsettings.searchstr,
-							//~ types: searchsettings.types.join('+')
-						//~ }
-					//~ });
-				//~ }
-			//~ }
-		//~ },
+		}
 	},
 	mounted: function() {
 		this.getMitarbeiterData();
